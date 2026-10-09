@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+/* Design tokens. Components use these via Tailwind utilities, never raw hex. */
+:root {
+  --ivory: #f6f1e7;
+  --sand: #e6dcc6;
+  --charcoal: #1b1d1a;
+  --ink-soft: #4a4d47;
+  --forest: #1f4a37;
+  --forest-deep: #12291f;
+  --ocean: #1d3b53;
+  --earth: #8a6a4a;
+  --accent: #d2753a; /* sparing: CTAs and small marks only */
+  --line: rgb(27 29 26 / 0.14);
+}
+
+@theme inline {
+  --color-ivory: var(--ivory);
+  --color-sand: var(--sand);
+  --color-charcoal: var(--charcoal);
+  --color-ink-soft: var(--ink-soft);
+  --color-forest: var(--forest);
+  --color-forest-deep: var(--forest-deep);
+  --color-ocean: var(--ocean);
+  --color-earth: var(--earth);
+  --color-accent: var(--accent);
+  --color-line: var(--line);
+  --font-sans: var(--font-manrope), system-ui, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, serif;
+  /* Type scale: display sizes are fluid, body is fixed. */
+  --text-display: clamp(3.25rem, 11vw, 11rem);
+  --text-headline: clamp(2.25rem, 6vw, 5.5rem);
+  --text-title: clamp(1.5rem, 2.6vw, 2.5rem);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html { background: var(--ivory); color: var(--charcoal); -webkit-font-smoothing: antialiased; }
+body { font-family: var(--font-sans); line-height: 1.6; overflow-x: hidden; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.line-mask { display: block; overflow: hidden; padding-bottom: 0.2em; margin-bottom: -0.2em; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}

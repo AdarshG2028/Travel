@@ -1,0 +1,321 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum TripCategory {
+  LEISURE
+  RELIGIOUS
+}
+
+enum BookingType {
+  PACKAGE_BOOKING
+  VEHICLE_BOOKING
+}
+
+enum BookingStatus {
+  PENDING
+  PAYMENT_PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  CREATED
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  ON_TRIP
+  MAINTENANCE
+}
+
+enum InquiryStatus {
+  NEW
+  CONTACTED
+  CLOSED
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationChannel {
+  EMAIL
+  WHATSAPP
+  SMS
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  FAILED
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String
+  phone         String?
+  role          Role           @default(CUSTOMER)
+  authId        String?        @unique
+  createdAt     DateTime       @default(now())
+  bookings      Booking[]
+  reviews       Review[]
+  notifications Notification[]
+}
+
+model Destination {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  name        String
+  state       String
+  tagline     String
+  description String
+  heroImage   String
+  published   Boolean   @default(true)
+  packages    Package[]
+
+  @@index([state])
+}
+
+model Package {
+  id             String             @id @default(cuid())
+  slug           String             @unique
+  title          String
+  route          String             @default("")
+  category       TripCategory       @default(LEISURE)
+  summary        String
+  overview       String
+  days           Int
+  nights         Int
+  pricePerPerson Int
+  capacity       Int                @default(20)
+  hotels         String[]
+  inclusions     String[]
+  exclusions     String[]
+  featured       Boolean            @default(false)
+  published      Boolean            @default(false)
+  destinationId  String
+  destination    Destination        @relation(fields: [destinationId], references: [id])
+  images         PackageImage[]
+  itinerary      PackageItinerary[]
+  dates          PackageDate[]
+  reviews        Review[]
+  bookings       PackageBooking[]
+  createdAt      DateTime           @default(now())
+
+  @@index([destinationId])
+  @@index([published, featured])
+  @@index([category])
+}
+
+model PackageImage {
+  id        String  @id @default(cuid())
+  packageId String
+  url       String
+  alt       String
+  position  Int     @default(0)
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@index([packageId])
+}
+
+model PackageItinerary {
+  id          String  @id @default(cuid())
+  packageId   String
+  day         Int
+  title       String
+  description String
+  package     Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, day])
+}
+
+model PackageDate {
+  id        String           @id @default(cuid())
+  packageId String
+  startDate DateTime
+  seatsLeft Int
+  package   Package          @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  bookings  PackageBooking[]
+
+  @@index([packageId, startDate])
+}
+
+model VehicleType {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  minSeats Int
+  maxSeats Int
+  image    String
+  vehicles Vehicle[]
+}
+
+model Vehicle {
+  id             String           @id @default(cuid())
+  typeId         String
+  type           VehicleType      @relation(fields: [typeId], references: [id])
+  model          String
+  registration   String           @unique
+  seats          Int
+  ac             Boolean          @default(true)
+  features       String[]
+  dailyPrice     Int
+  perKmPrice     Int?
+  driverIncluded Boolean          @default(true)
+  status         VehicleStatus    @default(AVAILABLE)
+  image          String
+  driver         Driver?
+  bookings       VehicleBooking[]
+
+  @@index([typeId, status])
+}
+
+model Driver {
+  id        String           @id @default(cuid())
+  name      String
+  phone     String
+  licenseNo String           @unique
+  available Boolean          @default(true)
+  vehicleId String?          @unique
+  vehicle   Vehicle?         @relation(fields: [vehicleId], references: [id])
+  bookings  VehicleBooking[]
+}
+
+model Booking {
+  id             String          @id @default(cuid())
+  reference      String          @unique
+  type           BookingType
+  status         BookingStatus   @default(PENDING)
+  userId         String?
+  user           User?           @relation(fields: [userId], references: [id])
+  contactName    String
+  contactPhone   String
+  contactEmail   String
+  totalAmount    Int
+  couponId       String?
+  coupon         Coupon?         @relation(fields: [couponId], references: [id])
+  packageBooking PackageBooking?
+  vehicleBooking VehicleBooking?
+  payments       Payment[]
+  createdAt      DateTime        @default(now())
+
+  @@index([status, createdAt])
+  @@index([userId])
+}
+
+model PackageBooking {
+  bookingId String      @id
+  booking   Booking     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  packageId String
+  package   Package     @relation(fields: [packageId], references: [id])
+  dateId    String
+  date      PackageDate @relation(fields: [dateId], references: [id])
+  travelers Int
+
+  @@index([packageId])
+}
+
+model VehicleBooking {
+  bookingId      String   @id
+  booking        Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  vehicleId      String
+  vehicle        Vehicle  @relation(fields: [vehicleId], references: [id])
+  driverId       String?
+  driver         Driver?  @relation(fields: [driverId], references: [id])
+  pickupLocation String
+  destination    String
+  startAt        DateTime
+  durationDays   Int
+  passengers     Int
+  needsDriver    Boolean  @default(true)
+  notes          String?
+
+  @@index([vehicleId, startAt])
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  bookingId         String
+  booking           Booking       @relation(fields: [bookingId], references: [id])
+  amount            Int
+  status            PaymentStatus @default(CREATED)
+  razorpayOrderId   String?       @unique
+  razorpayPaymentId String?       @unique
+  createdAt         DateTime      @default(now())
+
+  @@index([bookingId])
+}
+
+model Review {
+  id         String       @id @default(cuid())
+  packageId  String
+  package    Package      @relation(fields: [packageId], references: [id])
+  userId     String?
+  user       User?        @relation(fields: [userId], references: [id])
+  rating     Int
+  body       String
+  authorName String
+  authorCity String
+  status     ReviewStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
+
+  @@index([packageId, status])
+}
+
+model Inquiry {
+  id           String        @id @default(cuid())
+  name         String
+  phone        String
+  email        String
+  destination  String
+  startDate    DateTime?
+  endDate      DateTime?
+  travelers    Int
+  budget       Int?
+  requirements String?
+  status       InquiryStatus @default(NEW)
+  createdAt    DateTime      @default(now())
+
+  @@index([status, createdAt])
+}
+
+model Coupon {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  percentOff  Int
+  maxDiscount Int?
+  validUntil  DateTime
+  active      Boolean   @default(true)
+  bookings    Booking[]
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String?
+  user      User?               @relation(fields: [userId], references: [id])
+  channel   NotificationChannel @default(EMAIL)
+  template  String
+  recipient String
+  status    NotificationStatus  @default(QUEUED)
+  createdAt DateTime            @default(now())
+
+  @@index([status])
+}
