@@ -75,6 +75,7 @@ model User {
   phone         String?
   role          Role           @default(CUSTOMER)
   authId        String?        @unique
+  passwordHash  String?
   createdAt     DateTime       @default(now())
   bookings      Booking[]
   reviews       Review[]

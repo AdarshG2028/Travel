@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const db = new PrismaClient();
 const img = (id: string, w = 1800) => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&q=80&w=${w}`;
@@ -168,6 +169,20 @@ const reviews = [
 ] as const;
 
 async function main() {
+  const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (adminEmail && adminPassword) {
+    const passwordHash = await bcrypt.hash(adminPassword, 12);
+    await db.user.upsert({
+      where: { email: adminEmail },
+      update: { passwordHash, role: "ADMIN" },
+      create: { email: adminEmail, name: "Admin", passwordHash, role: "ADMIN" },
+    });
+    console.log("Admin user ready:", adminEmail);
+  } else {
+    console.log("ADMIN_EMAIL / ADMIN_PASSWORD not set; skipping admin user.");
+  }
+
   const destBySlug: Record<string, string> = {};
   for (const d of destinations) {
     const row = await db.destination.upsert({ where: { slug: d.slug }, update: d, create: d });

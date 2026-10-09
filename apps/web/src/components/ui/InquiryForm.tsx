@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { inquirySchema } from "@travel/validation";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const ENDPOINT = "/api/inquiries";
 type State = { status: "idle" | "sending" | "done" | "error"; errors?: Record<string, string>; message?: string };
 
 const field = "mt-1 w-full border border-charcoal/25 bg-transparent px-4 py-3 min-h-12 focus:border-forest";
@@ -23,7 +23,7 @@ export function InquiryForm({ defaultDestination = "" }: { defaultDestination?: 
     }
     setState({ status: "sending" });
     try {
-      const res = await fetch(`${API}/inquiries`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(parsed.data) });
+      const res = await fetch(ENDPOINT, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(parsed.data) });
       if (!res.ok) throw new Error();
       setState({ status: "done" });
     } catch {
